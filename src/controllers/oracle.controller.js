@@ -51,10 +51,21 @@ export const getTaskSuggestion = async (req, res) => {
 
         const chosen = scoredTasks.sort((a, b) => b.score - a.score)[0]
 
+        // generate rationale
         let whisper = "The Oracle has chosen this path for you."
-        if (chosen.task.priority === 'urgent') whisper = "This demands your immediate presence."
-        if (chosen.task.rejectionCount > 2) whisper = "Do not hide from this task any longer."
-        if (chosen.task.category === 'deep-work') whisper = "Your mind is sharp: manifest this challenge."
+
+        if (chosen.task.category === lastCategory) {
+            whisper = "Continuing the thread. One more push in this category?"
+        } else if (lastCategory) {
+            whisper = `Transitioning from ${lastCategory} to ${chosen.task.category}. This balances your focus.`
+        }
+
+        if (chosen.task.priority === 'urgent') whisper = "This is a pivotal moment: priority demands action."
+        if (chosen.task.rejectionCount > 2) whisper = "The path you avoid is the path you need. Manifest this now."
+        
+        if (chosen.task.date && new Date(chosen.task.date) <= new Date()) {
+            whisper = "Time flows onward. This task is rooted in the present moment."
+        }
 
         res.json({
             task: chosen.task,
