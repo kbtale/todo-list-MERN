@@ -50,3 +50,34 @@ export const getTaskSuggestion = async (req, res) => {
         res.status(500).json({ message: error.message })
     }
 }
+
+export const manifestTask = async (req, res) => {
+    try {
+        const task = await Task.findOneAndUpdate(
+            { _id: req.params.id, user: req.userId },
+            { isCompleted: true, completedAt: new Date() },
+            { new: true }
+        )
+        if (!task) return res.status(404).json({ message: "Task not found" })
+        res.json({ message: "Task manifested successfully", task })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+export const deferTask = async (req, res) => {
+    try {
+        const task = await Task.findOneAndUpdate(
+            { _id: req.params.id, user: req.userId },
+            { 
+                $inc: { rejectionCount: 1 },
+                lastSuggested: new Date() 
+            },
+            { new: true }
+        )
+        if (!task) return res.status(404).json({ message: "Task not found" })
+        res.json({ message: "Task deferred for later exploration", task })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
