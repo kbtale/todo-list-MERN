@@ -37,3 +37,11 @@ build/
 client/node_modules/
 client/dist/
 client/package-lock.json
+
+# Documentation
+*.md
+!README.md
+
+# Agent Skills
+skills-lock.json
+.agents/
