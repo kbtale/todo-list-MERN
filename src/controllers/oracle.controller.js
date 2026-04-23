@@ -32,6 +32,11 @@ export const getTaskSuggestion = async (req, res) => {
                 score *= ENERGY_MODIFIER
             }
 
+            // urgency modifier
+            if (task.date && new Date(task.date) <= new Date()) {
+                score *= 1.5
+            }
+
             score -= (task.rejectionCount * 5)
 
             // variety modifier
