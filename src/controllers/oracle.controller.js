@@ -21,7 +21,10 @@ export const getTaskSuggestion = async (req, res) => {
             return res.json({ message: "The Oracle finds no pending tasks. You are at peace.", task: null })
         }
 
-        // --- Scoring Algorithm ---
+        const lastCompleted = await Task.findOne({ user: req.userId, isCompleted: true }).sort({ completedAt: -1 })
+        const lastCategory = lastCompleted ? lastCompleted.category : null
+
+        // scoring algorithm
         const scoredTasks = tasks.map(task => {
             let score = PRIORITY_WEIGHTS[task.priority] || 0
             
@@ -29,17 +32,40 @@ export const getTaskSuggestion = async (req, res) => {
                 score *= ENERGY_MODIFIER
             }
 
+            // urgency modifier
+            if (task.date && new Date(task.date) <= new Date()) {
+                score *= 1.5
+            }
+
             score -= (task.rejectionCount * 5)
+
+            // variety modifier
+            if (lastCategory && task.category !== lastCategory) {
+                score *= 1.2
+            } else if (lastCategory && task.category === lastCategory) {
+                score *= 0.8
+            }
 
             return { task, score }
         })
 
         const chosen = scoredTasks.sort((a, b) => b.score - a.score)[0]
 
+        // generate rationale
         let whisper = "The Oracle has chosen this path for you."
-        if (chosen.task.priority === 'urgent') whisper = "This demands your immediate presence."
-        if (chosen.task.rejectionCount > 2) whisper = "Do not hide from this task any longer."
-        if (chosen.task.category === 'deep-work') whisper = "Your mind is sharp: manifest this challenge."
+
+        if (chosen.task.category === lastCategory) {
+            whisper = "Continuing the thread. One more push in this category?"
+        } else if (lastCategory) {
+            whisper = `Transitioning from ${lastCategory} to ${chosen.task.category}. This balances your focus.`
+        }
+
+        if (chosen.task.priority === 'urgent') whisper = "This is a pivotal moment: priority demands action."
+        if (chosen.task.rejectionCount > 2) whisper = "The path you avoid is the path you need. Manifest this now."
+        
+        if (chosen.task.date && new Date(chosen.task.date) <= new Date()) {
+            whisper = "Time flows onward. This task is rooted in the present moment."
+        }
 
         res.json({
             task: chosen.task,
