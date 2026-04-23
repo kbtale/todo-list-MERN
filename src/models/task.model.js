@@ -9,6 +9,36 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    priority: {
+        type: String,
+        enum: ['low', 'medium', 'high', 'urgent'],
+        default: 'medium'
+    },
+    energyLevel: {
+        type: Number,
+        min: 1,
+        max: 5,
+        default: 3
+    },
+    category: {
+        type: String,
+        enum: ['deep-work', 'life', 'quick-fix', 'learning', 'health'],
+        default: 'life'
+    },
+    rejectionCount: {
+        type: Number,
+        default: 0
+    },
+    lastSuggested: {
+        type: Date
+    },
+    isCompleted: {
+        type: Boolean,
+        default: false
+    },
+    completedAt: {
+        type: Date
+    },
     date: {
         type: Date,
         default: Date.now
@@ -19,7 +49,7 @@ const taskSchema = new mongoose.Schema({
         required: true
     }
 }, {
-timestamps: true
+    timestamps: true
 })
 
 export default mongoose.model('Task', taskSchema)
