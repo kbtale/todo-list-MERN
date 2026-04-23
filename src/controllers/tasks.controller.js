@@ -11,16 +11,23 @@ export const getTasks = async (req, res) => {
     res.json(tasks)
 }
 export const createTask = async (req, res) => {
-    const { title, description, date } = req.body
+    try {
+        const { title, description, date, priority, energyLevel, category } = req.body
 
-    const newTask = new Task({
-        title,
-        description,
-        date,
-        user: req.userId
-    })
-    const task = await newTask.save()
-    res.json(task)
+        const newTask = new Task({
+            title,
+            description,
+            date,
+            priority,
+            energyLevel,
+            category,
+            user: req.userId
+        })
+        const task = await newTask.save()
+        res.json(task)
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 }
 export const updateTask = async (req, res) => {
     const task = await Task.findByIdAndUpdate(req.body)
