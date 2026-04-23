@@ -21,7 +21,10 @@ export const getTaskSuggestion = async (req, res) => {
             return res.json({ message: "The Oracle finds no pending tasks. You are at peace.", task: null })
         }
 
-        // --- Scoring Algorithm ---
+        const lastCompleted = await Task.findOne({ user: req.userId, isCompleted: true }).sort({ completedAt: -1 })
+        const lastCategory = lastCompleted ? lastCompleted.category : null
+
+        // scoring algorithm
         const scoredTasks = tasks.map(task => {
             let score = PRIORITY_WEIGHTS[task.priority] || 0
             
@@ -30,6 +33,13 @@ export const getTaskSuggestion = async (req, res) => {
             }
 
             score -= (task.rejectionCount * 5)
+
+            // variety modifier
+            if (lastCategory && task.category !== lastCategory) {
+                score *= 1.2
+            } else if (lastCategory && task.category === lastCategory) {
+                score *= 0.8
+            }
 
             return { task, score }
         })
