@@ -8,10 +8,12 @@ updateTask,
 deleteTask
 }
 from '../controllers/tasks.controller.js'
+import { getTaskSuggestion } from '../controllers/oracle.controller.js'
 
 const router = Router()
 
 router.get('/tasks', requireAuth, getTasks)
+router.get('/tasks/oracle', requireAuth, getTaskSuggestion)
 router.get('/tasks:id', requireAuth, getTask)
 router.post('/tasks', requireAuth, createTask)
 router.delete('/tasks:id', requireAuth, deleteTask)
