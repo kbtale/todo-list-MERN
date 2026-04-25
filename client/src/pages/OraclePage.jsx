@@ -25,9 +25,13 @@ const OraclePage = () => {
     fetchSuggestion();
   }, []);
 
+  const manifestSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'); // Chime
+  const deferSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'); // Woosh
+
   const handleManifest = async () => {
     if (!suggestion?.task) return;
     try {
+      manifestSfx.play();
       await axios.post(`/api/tasks/${suggestion.task._id}/manifest`);
       confetti({
         particleCount: 150,
@@ -44,6 +48,7 @@ const OraclePage = () => {
   const handleDefer = async () => {
     if (!suggestion?.task) return;
     try {
+      deferSfx.play();
       await axios.post(`/api/tasks/${suggestion.task._id}/defer`);
       fetchSuggestion();
     } catch (err) {
