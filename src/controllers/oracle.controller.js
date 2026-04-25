@@ -1,4 +1,5 @@
 import Task from "../models/task.model.js"
+import User from "../models/user.model.js"
 
 const PRIORITY_WEIGHTS = {
     urgent: 50,
@@ -7,15 +8,15 @@ const PRIORITY_WEIGHTS = {
     low: 5
 }
 
-const ENERGY_MODIFIER = 1.2
+const ENERGY_MATCH_MODIFIER = 2.0
 const STALE_THRESHOLD_DAYS = 3
 
 export const getTaskSuggestion = async (req, res) => {
     try {
-        const tasks = await Task.find({
-            user: req.userId,
-            isCompleted: false
-        })
+        const [tasks, user] = await Promise.all([
+            Task.find({ user: req.userId, isCompleted: false }),
+            User.findById(req.userId)
+        ])
 
         if (!tasks || tasks.length === 0) {
             return res.json({ message: "The Oracle finds no pending tasks. You are at peace.", task: null })
@@ -28,8 +29,11 @@ export const getTaskSuggestion = async (req, res) => {
         const scoredTasks = tasks.map(task => {
             let score = PRIORITY_WEIGHTS[task.priority] || 0
             
-            if (task.category === 'deep-work' && task.energyLevel >= 4) {
-                score *= ENERGY_MODIFIER
+            // Energy Sync Logic
+            if (task.energyLevel === user.currentEnergy) {
+                score *= ENERGY_MATCH_MODIFIER
+            } else if (Math.abs(task.energyLevel - user.currentEnergy) >= 2) {
+                score *= 0.5 // Penalty for extreme mismatch
             }
 
             // urgency modifier
@@ -150,6 +154,20 @@ export const getSyncStats = async (req, res) => {
             syncRate: Math.round(syncRate),
             heatmap: heatmapData
         })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+export const updateUserEnergy = async (req, res) => {
+    try {
+        const { energyLevel } = req.body
+        const user = await User.findByIdAndUpdate(
+            req.userId,
+            { currentEnergy: energyLevel },
+            { new: true }
+        )
+        res.json({ message: "Energy state synchronized", currentEnergy: user.currentEnergy })
     } catch (error) {
         res.status(500).json({ message: error.message })
     }

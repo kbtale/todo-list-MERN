@@ -8,6 +8,7 @@ const OraclePage = () => {
   const [suggestion, setSuggestion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userEnergy, setUserEnergy] = useState(3);
 
   const fetchSuggestion = async () => {
     try {
@@ -21,8 +22,22 @@ const OraclePage = () => {
     }
   };
 
+  const updateEnergy = async (level) => {
+    try {
+      setUserEnergy(level);
+      await axios.post('/api/users/energy', { energyLevel: level });
+      fetchSuggestion(); // Re-rank tasks
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    fetchSuggestion();
+    const init = async () => {
+      // Get initial energy state from somewhere or just fetch suggestion
+      fetchSuggestion();
+    };
+    init();
   }, []);
 
   const manifestSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'); // Chime
@@ -86,6 +101,22 @@ const OraclePage = () => {
           Your path is revealed
         </p>
       </header>
+
+      {/* Energy State Selector */}
+      <div className="mb-12 cartoon-card bg-white p-4 flex items-center gap-6">
+        <span className="uppercase text-sm">How do you feel?</span>
+        <div className="flex gap-2 text-2xl">
+          {[1, 2, 3, 4, 5].map((level) => (
+            <button
+              key={level}
+              onClick={() => updateEnergy(level)}
+              className={`w-12 h-12 flex items-center justify-center border-4 border-black rounded-lg transition-all ${userEnergy === level ? 'bg-[#FFD600] scale-110 -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white grayscale opacity-50 hover:opacity-100 hover:grayscale-0'}`}
+            >
+              {level <= 1 ? '🌱' : level <= 3 ? '⚡' : '🔥'}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <main className="w-full max-w-2xl">
         <AnimatePresence mode="wait">
