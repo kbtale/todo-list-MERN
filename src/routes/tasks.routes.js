@@ -8,12 +8,14 @@ updateTask,
 deleteTask
 }
 from '../controllers/tasks.controller.js'
-import { getTaskSuggestion, manifestTask, deferTask } from '../controllers/oracle.controller.js'
+import { getTaskSuggestion, manifestTask, deferTask, getSyncStats, updateUserEnergy } from '../controllers/oracle.controller.js'
 
 const router = Router()
 
 router.get('/tasks', requireAuth, getTasks)
 router.get('/tasks/oracle', requireAuth, getTaskSuggestion)
+router.get('/tasks/oracle/stats', requireAuth, getSyncStats)
+router.post('/users/energy', requireAuth, updateUserEnergy)
 router.post('/tasks/:id/manifest', requireAuth, manifestTask)
 router.post('/tasks/:id/defer', requireAuth, deferTask)
 router.get('/tasks:id', requireAuth, getTask)

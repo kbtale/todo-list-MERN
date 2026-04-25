@@ -1,4 +1,5 @@
 import Task from "../models/task.model.js"
+import User from "../models/user.model.js"
 
 const PRIORITY_WEIGHTS = {
     urgent: 50,
@@ -7,15 +8,15 @@ const PRIORITY_WEIGHTS = {
     low: 5
 }
 
-const ENERGY_MODIFIER = 1.2
+const ENERGY_MATCH_MODIFIER = 2.0
 const STALE_THRESHOLD_DAYS = 3
 
 export const getTaskSuggestion = async (req, res) => {
     try {
-        const tasks = await Task.find({
-            user: req.userId,
-            isCompleted: false
-        })
+        const [tasks, user] = await Promise.all([
+            Task.find({ user: req.userId, isCompleted: false }),
+            User.findById(req.userId)
+        ])
 
         if (!tasks || tasks.length === 0) {
             return res.json({ message: "The Oracle finds no pending tasks. You are at peace.", task: null })
@@ -28,8 +29,11 @@ export const getTaskSuggestion = async (req, res) => {
         const scoredTasks = tasks.map(task => {
             let score = PRIORITY_WEIGHTS[task.priority] || 0
             
-            if (task.category === 'deep-work' && task.energyLevel >= 4) {
-                score *= ENERGY_MODIFIER
+            // Energy Sync Logic
+            if (task.energyLevel === user.currentEnergy) {
+                score *= ENERGY_MATCH_MODIFIER
+            } else if (Math.abs(task.energyLevel - user.currentEnergy) >= 2) {
+                score *= 0.5 // Penalty for extreme mismatch
             }
 
             // urgency modifier
@@ -103,6 +107,67 @@ export const deferTask = async (req, res) => {
         )
         if (!task) return res.status(404).json({ message: "Task not found" })
         res.json({ message: "Task deferred for later exploration", task })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+export const getSyncStats = async (req, res) => {
+    try {
+        const tasks = await Task.find({ user: req.userId })
+        
+        const manifested = tasks.filter(t => t.isCompleted).length
+        const totalRejections = tasks.reduce((sum, t) => sum + (t.rejectionCount || 0), 0)
+        
+        const totalSuggestions = manifested + totalRejections
+        const syncRate = totalSuggestions > 0 ? (manifested / totalSuggestions) * 100 : 0
+
+        // Heatmap logic
+        const completedTasks = tasks.filter(t => t.isCompleted && t.completedAt)
+        const heatmap = {
+            morning: { total: 0, energy: 0 },
+            afternoon: { total: 0, energy: 0 },
+            evening: { total: 0, energy: 0 },
+            night: { total: 0, energy: 0 }
+        }
+
+        completedTasks.forEach(t => {
+            const hour = new Date(t.completedAt).getHours()
+            let block = 'night'
+            if (hour >= 5 && hour < 12) block = 'morning'
+            else if (hour >= 12 && hour < 18) block = 'afternoon'
+            else if (hour >= 18 && hour < 23) block = 'evening'
+
+            heatmap[block].total += 1
+            heatmap[block].energy += t.energyLevel || 0
+        })
+
+        const heatmapData = Object.keys(heatmap).map(block => ({
+            block,
+            avgEnergy: heatmap[block].total > 0 ? (heatmap[block].energy / heatmap[block].total).toFixed(1) : 0,
+            count: heatmap[block].total
+        }))
+
+        res.json({
+            manifested,
+            totalRejections,
+            totalSuggestions,
+            syncRate: Math.round(syncRate),
+            heatmap: heatmapData
+        })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+export const updateUserEnergy = async (req, res) => {
+    try {
+        const { energyLevel } = req.body
+        const user = await User.findByIdAndUpdate(
+            req.userId,
+            { currentEnergy: energyLevel },
+            { new: true }
+        )
+        res.json({ message: "Energy state synchronized", currentEnergy: user.currentEnergy })
     } catch (error) {
         res.status(500).json({ message: error.message })
     }

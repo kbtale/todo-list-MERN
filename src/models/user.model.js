@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
+    },
+    currentEnergy: {
+        type: Number,
+        min: 1,
+        max: 5,
+        default: 3
     }
 }, {
     timestamps: true
