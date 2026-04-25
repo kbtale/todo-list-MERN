@@ -107,3 +107,23 @@ export const deferTask = async (req, res) => {
         res.status(500).json({ message: error.message })
     }
 }
+export const getSyncStats = async (req, res) => {
+    try {
+        const tasks = await Task.find({ user: req.userId })
+        
+        const manifested = tasks.filter(t => t.isCompleted).length
+        const totalRejections = tasks.reduce((sum, t) => sum + (t.rejectionCount || 0), 0)
+        
+        const totalSuggestions = manifested + totalRejections
+        const syncRate = totalSuggestions > 0 ? (manifested / totalSuggestions) * 100 : 0
+
+        res.json({
+            manifested,
+            totalRejections,
+            totalSuggestions,
+            syncRate: Math.round(syncRate)
+        })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
