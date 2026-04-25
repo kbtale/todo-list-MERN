@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain } from 'lucide-react';
+import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain, Leaf, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const OraclePage = () => {
@@ -112,7 +112,7 @@ const OraclePage = () => {
               onClick={() => updateEnergy(level)}
               className={`w-12 h-12 flex items-center justify-center border-4 border-black rounded-lg transition-all ${userEnergy === level ? 'bg-[#FFD600] scale-110 -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white grayscale opacity-50 hover:opacity-100 hover:grayscale-0'}`}
             >
-              {level <= 1 ? '🌱' : level <= 3 ? '⚡' : '🔥'}
+              {level <= 1 ? <Leaf size={24} /> : level <= 3 ? <Zap size={24} /> : <Flame size={24} />}
             </button>
           ))}
         </div>
