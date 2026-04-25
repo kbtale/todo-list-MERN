@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -13,7 +13,7 @@ const OraclePage = () => {
   const fetchSuggestion = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/tasks/oracle');
+      const res = await axios.get('/tasks/oracle');
       setSuggestion(res.data);
       setLoading(false);
     } catch (err) {
@@ -25,7 +25,7 @@ const OraclePage = () => {
   const updateEnergy = async (level) => {
     try {
       setUserEnergy(level);
-      await axios.post('/api/users/energy', { energyLevel: level });
+      await axios.post('/users/energy', { energyLevel: level });
       fetchSuggestion(); // Re-rank tasks
     } catch (err) {
       console.error(err);
@@ -47,7 +47,7 @@ const OraclePage = () => {
     if (!suggestion?.task) return;
     try {
       manifestSfx.play();
-      await axios.post(`/api/tasks/${suggestion.task._id}/manifest`);
+      await axios.post(`/tasks/${suggestion.task._id}/manifest`);
       confetti({
         particleCount: 150,
         spread: 70,
@@ -64,7 +64,7 @@ const OraclePage = () => {
     if (!suggestion?.task) return;
     try {
       deferSfx.play();
-      await axios.post(`/api/tasks/${suggestion.task._id}/defer`);
+      await axios.post(`/tasks/${suggestion.task._id}/defer`);
       fetchSuggestion();
     } catch (err) {
       setError("Could not defer the path.");

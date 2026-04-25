@@ -1,20 +1,27 @@
 import { createContext, useState } from "react";
+import PropTypes from "prop-types";
 import { registerRequest } from "../api/auth";
 
 export const AuthContext = createContext()
-export const AuthProvider = ({children}) => {
-    const [user, setUser] = null
 
-    const signIn = async (user) => {
-        const res = await registerRequest(values)
+export const AuthProvider = ({children}) => {
+    const [user, setUser] = useState(null)
+
+    const signIn = async (userData) => {
+        const res = await registerRequest(userData)
         setUser(res.data)
-        console.log(res.data)
     }
+
     return (
         <AuthContext.Provider value={{
-
+            user,
+            signIn
         }}>
             {children}
         </AuthContext.Provider>
     )
 }
+
+AuthProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+};

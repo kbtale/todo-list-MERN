@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/axios';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, XCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,7 +11,7 @@ const DashboardPage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('/api/tasks/oracle/stats');
+        const res = await axios.get('/tasks/oracle/stats');
         setStats(res.data);
         setLoading(false);
       } catch (error) {
