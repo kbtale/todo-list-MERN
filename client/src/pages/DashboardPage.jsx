@@ -97,6 +97,38 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Energy Heatmap Section */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="cartoon-card p-8 bg-white mb-8"
+        >
+          <h2 className="text-3xl font-black uppercase mb-8 border-b-4 border-black inline-block">
+            Energy Heatmap
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {stats?.heatmap?.map(item => (
+              <div key={item.block} className="flex flex-col items-center">
+                <div className="w-full bg-black/5 border-4 border-black rounded-lg h-32 relative overflow-hidden flex items-end">
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(item.avgEnergy / 5) * 100}%` }}
+                    className="w-full bg-[#FFD600] border-t-4 border-black"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-3xl font-black">{item.count > 0 ? item.avgEnergy : '-'}</span>
+                  </div>
+                </div>
+                <span className="mt-4 uppercase text-sm tracking-widest">{item.block}</span>
+                <span className="text-xs text-black/40 font-normal uppercase">{item.count} tasks</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 text-black/70 italic text-center">
+            Shows your average cognitive load (1-5) across different times of the day.
+          </p>
+        </motion.div>
       </div>
     </div>
   );

@@ -117,11 +117,38 @@ export const getSyncStats = async (req, res) => {
         const totalSuggestions = manifested + totalRejections
         const syncRate = totalSuggestions > 0 ? (manifested / totalSuggestions) * 100 : 0
 
+        // Heatmap logic
+        const completedTasks = tasks.filter(t => t.isCompleted && t.completedAt)
+        const heatmap = {
+            morning: { total: 0, energy: 0 },
+            afternoon: { total: 0, energy: 0 },
+            evening: { total: 0, energy: 0 },
+            night: { total: 0, energy: 0 }
+        }
+
+        completedTasks.forEach(t => {
+            const hour = new Date(t.completedAt).getHours()
+            let block = 'night'
+            if (hour >= 5 && hour < 12) block = 'morning'
+            else if (hour >= 12 && hour < 18) block = 'afternoon'
+            else if (hour >= 18 && hour < 23) block = 'evening'
+
+            heatmap[block].total += 1
+            heatmap[block].energy += t.energyLevel || 0
+        })
+
+        const heatmapData = Object.keys(heatmap).map(block => ({
+            block,
+            avgEnergy: heatmap[block].total > 0 ? (heatmap[block].energy / heatmap[block].total).toFixed(1) : 0,
+            count: heatmap[block].total
+        }))
+
         res.json({
             manifested,
             totalRejections,
             totalSuggestions,
-            syncRate: Math.round(syncRate)
+            syncRate: Math.round(syncRate),
+            heatmap: heatmapData
         })
     } catch (error) {
         res.status(500).json({ message: error.message })
