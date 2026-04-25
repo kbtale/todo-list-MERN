@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../api/axios';
 import { motion } from 'framer-motion';
 import { Sparkles, Zap, Target, BookOpen, Brain, Heart, ArrowRight } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const AddTaskPage = () => {
 
   const onSubmit = async (data) => {
     try {
-      await axios.post('/api/tasks', data);
+      await axios.post('/tasks', data);
       navigate('/oracle');
     } catch (error) {
       console.error(error);
@@ -45,7 +45,7 @@ const AddTaskPage = () => {
         className="cartoon-card w-full max-w-3xl p-12 bg-white"
       >
         <h1 className="text-5xl font-black uppercase mb-12 tracking-tighter italic">
-          The Ritual
+          Add Task
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
@@ -125,7 +125,7 @@ const AddTaskPage = () => {
             type="submit"
             className="cartoon-button w-full bg-black text-white text-3xl py-6 flex items-center justify-center gap-4 group"
           >
-            COMMIT TO THE PATH
+            ADD TASK
             <ArrowRight className="group-hover:translate-x-2 transition-transform" />
           </button>
         </form>

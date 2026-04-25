@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain } from 'lucide-react';
+import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain, Leaf, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const OraclePage = () => {
@@ -13,7 +13,7 @@ const OraclePage = () => {
   const fetchSuggestion = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/tasks/oracle');
+      const res = await axios.get('/tasks/oracle');
       setSuggestion(res.data);
       setLoading(false);
     } catch (err) {
@@ -25,7 +25,7 @@ const OraclePage = () => {
   const updateEnergy = async (level) => {
     try {
       setUserEnergy(level);
-      await axios.post('/api/users/energy', { energyLevel: level });
+      await axios.post('/users/energy', { energyLevel: level });
       fetchSuggestion(); // Re-rank tasks
     } catch (err) {
       console.error(err);
@@ -47,7 +47,7 @@ const OraclePage = () => {
     if (!suggestion?.task) return;
     try {
       manifestSfx.play();
-      await axios.post(`/api/tasks/${suggestion.task._id}/manifest`);
+      await axios.post(`/tasks/${suggestion.task._id}/manifest`);
       confetti({
         particleCount: 150,
         spread: 70,
@@ -64,7 +64,7 @@ const OraclePage = () => {
     if (!suggestion?.task) return;
     try {
       deferSfx.play();
-      await axios.post(`/api/tasks/${suggestion.task._id}/defer`);
+      await axios.post(`/tasks/${suggestion.task._id}/defer`);
       fetchSuggestion();
     } catch (err) {
       setError("Could not defer the path.");
@@ -112,7 +112,7 @@ const OraclePage = () => {
               onClick={() => updateEnergy(level)}
               className={`w-12 h-12 flex items-center justify-center border-4 border-black rounded-lg transition-all ${userEnergy === level ? 'bg-[#FFD600] scale-110 -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white grayscale opacity-50 hover:opacity-100 hover:grayscale-0'}`}
             >
-              {level <= 1 ? '🌱' : level <= 3 ? '⚡' : '🔥'}
+              {level <= 1 ? <Leaf size={24} /> : level <= 3 ? <Zap size={24} /> : <Flame size={24} />}
             </button>
           ))}
         </div>
