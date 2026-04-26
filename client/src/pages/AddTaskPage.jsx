@@ -1,101 +1,113 @@
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import axios from '../api/axios';
-import { motion } from 'framer-motion';
-import { Sparkles, Zap, Target, BookOpen, Brain, Heart, ArrowRight } from 'lucide-react';
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { createTaskRequest } from "../api/tasks";
+import { ArrowLeft, Rocket, Brain, Heart, Zap, Coffee, ArrowRight } from "lucide-react";
 
-const AddTaskPage = () => {
-  const { register, handleSubmit, watch, setValue } = useForm({
+function AddTaskPage() {
+  const { register, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
-      priority: 'medium',
       energyLevel: 3,
-      category: 'life'
+      priority: "medium",
+      category: "life"
     }
   });
+
   const navigate = useNavigate();
+  const currentEnergy = watch("energyLevel");
+  const currentPriority = watch("priority");
+  const currentCategory = watch("category");
 
-  const energyLevel = watch('energyLevel');
-  const category = watch('category');
-  const priority = watch('priority');
-
-  const onSubmit = async (data) => {
+  const onSubmit = handleSubmit(async (data) => {
     try {
-      await axios.post('/tasks', data);
-      navigate('/oracle');
+      await createTaskRequest({
+        ...data,
+        date: new Date().toISOString(),
+      });
+      navigate("/oracle");
     } catch (error) {
-      console.error(error);
+      console.error("Failed to create task:", error);
     }
-  };
+  });
 
   const categories = [
-    { id: 'deep-work', icon: <Brain />, color: 'bg-blue-400' },
-    { id: 'learning', icon: <BookOpen />, color: 'bg-green-400' },
-    { id: 'health', icon: <Heart />, color: 'bg-red-400' },
-    { id: 'quick-fix', icon: <Sparkles />, color: 'bg-yellow-400' },
-    { id: 'life', icon: <Target />, color: 'bg-purple-400' },
+    { id: "deep-work", icon: <Brain size={18} />, label: "Deep-Work", color: "bg-[#FFD600]" },
+    { id: "learning", icon: <Coffee size={18} />, label: "Learning", color: "bg-[#2979FF] text-white" },
+    { id: "health", icon: <Heart size={18} />, label: "Health", color: "bg-[#FF4081] text-white" },
+    { id: "quick-fix", icon: <Zap size={18} />, label: "Quick-Fix", color: "bg-[#00E676]" },
+    { id: "life", icon: <Rocket size={18} />, label: "Life", color: "bg-black text-white" },
   ];
 
-  const priorities = ['low', 'medium', 'high', 'urgent'];
-
   return (
-    <div className="min-h-screen bg-[#2979FF] p-6 flex flex-col items-center justify-center font-bold">
-      <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="cartoon-card w-full max-w-3xl p-12 bg-white"
+    <div className="min-h-screen bg-[#F0F0F0] flex flex-col items-center p-4 md:p-8 pb-32">
+      <button 
+        onClick={() => navigate(-1)}
+        className="self-start mb-6 p-3 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all rounded-xl"
       >
-        <h1 className="text-5xl font-black uppercase mb-12 tracking-tighter italic">
-          Add Task
+        <ArrowLeft size={24} />
+      </button>
+
+      <div className="cartoon-card w-full max-w-2xl p-6 md:p-10 bg-white">
+        <h1 className="text-3xl md:text-4xl font-black uppercase mb-8 tracking-tighter italic">
+          New Task
         </h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
-          {/* Natural Language Sentence */}
-          <div className="text-3xl md:text-4xl leading-relaxed font-black uppercase">
-            I NEED TO 
-            <input 
-              {...register('title', { required: true })}
-              placeholder="DO SOMETHING..."
-              className="mx-2 border-b-8 border-black focus:outline-none placeholder:text-black/10 w-full md:w-auto min-w-[200px]"
-            />
-            <br />
-            WHICH IS 
-            <select 
-              {...register('description')}
-              className="mx-2 border-b-8 border-black focus:outline-none bg-transparent cursor-pointer"
-            >
-              <option value="A NECESSARY BURDEN">A NECESSARY BURDEN</option>
-              <option value="A STEP TOWARD GROWTH">A STEP TOWARD GROWTH</option>
-              <option value="A QUICK VICTORY">A QUICK VICTORY</option>
-              <option value="A DEEP CHALLENGE">A DEEP CHALLENGE</option>
-            </select>
+        <form onSubmit={onSubmit} className="space-y-8">
+          <div className="space-y-6">
+            {/* Title */}
+            <div className="flex flex-col">
+              <label className="text-[10px] font-black uppercase text-gray-400 mb-0">Task Title</label>
+              <input
+                type="text"
+                placeholder="What needs to be done?"
+                className="text-xl md:text-2xl font-black border-b-4 border-black bg-transparent focus:outline-none focus:border-[#FF4081] p-0 m-0 leading-none h-auto transition-colors"
+                {...register("title", { required: true })}
+                autoFocus
+              />
+            </div>
+            
+            {/* Context */}
+            <div className="flex flex-col">
+              <label className="text-[10px] font-black uppercase text-gray-400 mb-0">Context</label>
+              <textarea
+                placeholder="Add some details..."
+                rows="1"
+                className="text-lg md:text-xl border-b-4 border-black bg-transparent focus:outline-none focus:border-[#2979FF] p-0 m-0 leading-none min-h-[1.5rem] transition-colors resize-none overflow-hidden"
+                onInput={(e) => {
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                {...register("description")}
+              />
+            </div>
           </div>
 
-          <hr className="border-4 border-black" />
-
-          {/* Energy Sliders */}
-          <div className="grid md:grid-cols-2 gap-12">
-            <div>
-              <label className="block text-xl mb-4">ENERGY REQUIRED</label>
-              <div className="flex items-center gap-4 bg-black text-white p-4 rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-                <Zap className={`${energyLevel >= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-white'}`} />
-                <input 
-                  type="range" min="1" max="5" 
-                  {...register('energyLevel')}
-                  className="flex-1 accent-white h-2 rounded-lg cursor-pointer"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <label className="font-black uppercase text-sm flex justify-between">
+                Energy Required <span>{currentEnergy}</span>
+              </label>
+              <div className="bg-black p-4 rounded-xl border-4 border-black flex items-center gap-4">
+                <Zap className="text-[#FFD600]" size={20} fill="#FFD600" />
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  className="w-full accent-[#FFD600] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                  {...register("energyLevel")}
                 />
-                <span className="text-2xl w-8">{energyLevel}</span>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xl mb-4">PRIORITY LEVEL</label>
-              <div className="flex gap-2">
-                {priorities.map(p => (
+            <div className="space-y-4">
+              <label className="font-black uppercase text-sm">Priority Level</label>
+              <div className="flex justify-between gap-2">
+                {["low", "medium", "high", "urgent"].map((p) => (
                   <button
                     key={p}
                     type="button"
-                    onClick={() => setValue('priority', p)}
-                    className={`flex-1 py-2 border-4 border-black rounded-lg uppercase transition-all ${priority === p ? 'bg-pink-500 text-white translate-y-1 shadow-none' : 'bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}`}
+                    onClick={() => setValue("priority", p)}
+                    className={`flex-1 py-2 text-[10px] md:text-xs font-black uppercase border-4 border-black rounded-lg transition-all
+                      ${currentPriority === p ? 'bg-[#FF4081] text-white -translate-y-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' : 'bg-white'}`}
                   >
                     {p}
                   </button>
@@ -104,18 +116,19 @@ const AddTaskPage = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xl mb-4">CATEGORY</label>
-            <div className="flex flex-wrap gap-4">
-              {categories.map(cat => (
+          <div className="space-y-4">
+            <label className="font-black uppercase text-sm">Target Area</label>
+            <div className="flex flex-wrap gap-3">
+              {categories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setValue('category', cat.id)}
-                  className={`flex items-center gap-2 px-6 py-3 border-4 border-black rounded-full uppercase transition-all ${category === cat.id ? `${cat.color} translate-y-1 shadow-none` : 'bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}`}
+                  onClick={() => setValue("category", cat.id)}
+                  className={`flex items-center gap-2 px-4 py-3 border-4 border-black rounded-xl font-black uppercase text-xs transition-all
+                    ${currentCategory === cat.id ? `${cat.color} -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` : 'bg-white hover:bg-gray-50'}`}
                 >
                   {cat.icon}
-                  {cat.id}
+                  {cat.label}
                 </button>
               ))}
             </div>
@@ -123,15 +136,15 @@ const AddTaskPage = () => {
 
           <button 
             type="submit"
-            className="cartoon-button w-full bg-black text-white text-3xl py-6 flex items-center justify-center gap-4 group"
+            className="cartoon-button w-full bg-black text-white text-2xl py-5 flex items-center justify-center gap-4 group mt-8"
           >
-            ADD TASK
+            CREATE TASK
             <ArrowRight className="group-hover:translate-x-2 transition-transform" />
           </button>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
-};
+}
 
 export default AddTaskPage;

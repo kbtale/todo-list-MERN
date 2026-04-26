@@ -1,11 +1,11 @@
 import jwt from 'jsonwebtoken'
-import { SKEY } from '../config.js'
+import { TOKEN_SECRET } from '../config.js'
 
 export const requireAuth = (req, res, next) => {
     const { token } = req.cookies
-    if (!token) return res.status(401).json({message: "Invalid token"})
+    if (!token) return res.status(401).json({message: "No token, authorization denied"})
 
-    jwt.verify(token, SKEY, (error, decoded) => {
+    jwt.verify(token, TOKEN_SECRET, (error, decoded) => {
         if (error)
             return res.status(401).json({message: "Invalid token"})
 

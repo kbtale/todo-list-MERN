@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import axios from '../api/axios';
+import { 
+  getOracleSuggestionRequest, 
+  manifestTaskRequest, 
+  deferTaskRequest, 
+  updateEnergyRequest 
+} from '../api/tasks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain, Leaf, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -10,14 +15,15 @@ const OraclePage = () => {
   const [error, setError] = useState(null);
   const [userEnergy, setUserEnergy] = useState(3);
 
-  const fetchSuggestion = async () => {
+  const fetchSuggestion = async (isInitial = false) => {
     try {
-      setLoading(true);
-      const res = await axios.get('/tasks/oracle');
+      if (isInitial) setLoading(true);
+      const res = await getOracleSuggestionRequest();
       setSuggestion(res.data);
       setLoading(false);
+      setError(null);
     } catch (err) {
-      setError("The Oracle is silent. Try again later.");
+      setError("Unable to reach the Oracle. Check your connection.");
       setLoading(false);
     }
   };
@@ -25,29 +31,21 @@ const OraclePage = () => {
   const updateEnergy = async (level) => {
     try {
       setUserEnergy(level);
-      await axios.post('/users/energy', { energyLevel: level });
-      fetchSuggestion(); // Re-rank tasks
+      await updateEnergyRequest(level);
+      fetchSuggestion(); 
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    const init = async () => {
-      // Get initial energy state from somewhere or just fetch suggestion
-      fetchSuggestion();
-    };
-    init();
+    fetchSuggestion(true);
   }, []);
-
-  const manifestSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'); // Chime
-  const deferSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'); // Woosh
 
   const handleManifest = async () => {
     if (!suggestion?.task) return;
     try {
-      manifestSfx.play();
-      await axios.post(`/tasks/${suggestion.task._id}/manifest`);
+      await manifestTaskRequest(suggestion.task._id);
       confetti({
         particleCount: 150,
         spread: 70,
@@ -56,28 +54,27 @@ const OraclePage = () => {
       });
       fetchSuggestion();
     } catch (err) {
-      setError("Manifestation failed.");
+      setError("Task completion failed.");
     }
   };
 
   const handleDefer = async () => {
     if (!suggestion?.task) return;
     try {
-      deferSfx.play();
-      await axios.post(`/tasks/${suggestion.task._id}/defer`);
+      await deferTaskRequest(suggestion.task._id);
       fetchSuggestion();
     } catch (err) {
-      setError("Could not defer the path.");
+      setError("Could not skip this task.");
     }
   };
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'deep-work': return <Brain className="w-6 h-6" />;
-      case 'learning': return <BookOpen className="w-6 h-6" />;
-      case 'health': return <Zap className="w-6 h-6" />;
-      case 'quick-fix': return <Sparkles className="w-6 h-6" />;
-      default: return <Target className="w-6 h-6" />;
+      case 'deep-work': return <Brain size={18} />;
+      case 'learning': return <BookOpen size={18} />;
+      case 'health': return <Zap size={18} />;
+      case 'quick-fix': return <Sparkles size={18} />;
+      default: return <Target size={18} />;
     }
   };
 
@@ -92,27 +89,29 @@ const OraclePage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#FFD600] p-6 flex flex-col items-center justify-center font-bold">
-      <header className="mb-12 text-center">
-        <h1 className="text-6xl font-black uppercase tracking-tighter border-black text-black">
-          The Oracle
+    <div className="min-h-screen bg-[#FFD600] p-4 md:p-8 flex flex-col items-center pb-32">
+      <header className="mb-8 text-center mt-8">
+        <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-black italic">
+          THE ORACLE
         </h1>
-        <p className="text-xl bg-black text-white px-4 py-1 mt-2 inline-block -rotate-2">
-          Your path is revealed
-        </p>
+        <div className="bg-black text-white px-4 py-1 mt-2 inline-block -rotate-1 font-bold text-sm uppercase">
+          Your priorities, focused.
+        </div>
       </header>
 
-      {/* Energy State Selector */}
-      <div className="mb-12 cartoon-card bg-white p-4 flex items-center gap-6">
-        <span className="uppercase text-sm">How do you feel?</span>
-        <div className="flex gap-2 text-2xl">
+      {/* Energy Selector */}
+      <div className="mb-10 cartoon-card bg-white p-4 flex flex-col md:flex-row items-center gap-4 border-4 border-black">
+        <span className="uppercase text-xs font-black">Current Energy State</span>
+        <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((level) => (
             <button
               key={level}
+              type="button"
               onClick={() => updateEnergy(level)}
-              className={`w-12 h-12 flex items-center justify-center border-4 border-black rounded-lg transition-all ${userEnergy === level ? 'bg-[#FFD600] scale-110 -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white grayscale opacity-50 hover:opacity-100 hover:grayscale-0'}`}
+              className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center border-4 border-black rounded-xl transition-all 
+                ${userEnergy === level ? 'bg-[#FFD600] -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white opacity-40 hover:opacity-100'}`}
             >
-              {level <= 1 ? <Leaf size={24} /> : level <= 3 ? <Zap size={24} /> : <Flame size={24} />}
+              {level <= 1 ? <Leaf size={20} /> : level <= 3 ? <Zap size={20} /> : <Flame size={20} />}
             </button>
           ))}
         </div>
@@ -123,47 +122,44 @@ const OraclePage = () => {
           {suggestion?.task ? (
             <motion.div
               key={suggestion.task._id}
-              initial={{ scale: 0.8, rotate: -3 }}
-              animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0.5, rotate: 5, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 15 }}
-              className="cartoon-card p-8 bg-white"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="cartoon-card p-6 md:p-10 bg-white border-4 border-black"
             >
-              <div className="flex items-center justify-between mb-6">
-                <span className="flex items-center gap-2 bg-[#2979FF] text-white px-3 py-1 rounded-full border-2 border-black">
+              <div className="flex items-center justify-between mb-8">
+                <span className="flex items-center gap-2 bg-black text-white px-4 py-1.5 rounded-xl border-4 border-black font-black uppercase text-[10px]">
                   {getCategoryIcon(suggestion.task.category)}
                   {suggestion.task.category}
                 </span>
-                <span className="text-black/50">Score: {Math.round(suggestion.score)}</span>
+                <span className="font-black text-xs opacity-30 uppercase tracking-widest">Priority Score: {Math.round(suggestion.score)}</span>
               </div>
 
-              <h2 className="text-4xl font-black mb-4 uppercase leading-none">
+              <h2 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tight leading-[0.9]">
                 {suggestion.task.title}
               </h2>
               
-              <p className="text-lg mb-8 opacity-80">
-                {suggestion.task.description || "No description provided for this path."}
+              <p className="text-lg md:text-xl mb-10 font-bold opacity-70">
+                {suggestion.task.description || "No further context provided."}
               </p>
 
-              {/* Whisper Bar (Comic Bubble) */}
-              <div className="relative mb-12 bg-pink-100 border-4 border-black p-4 rounded-xl rotate-1">
-                <div className="absolute -bottom-4 left-8 w-0 h-0 border-l-[15px] border-l-transparent border-t-[15px] border-t-black border-r-[15px] border-r-transparent"></div>
-                <div className="absolute -bottom-[10px] left-8 w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-pink-100 border-r-[10px] border-r-transparent"></div>
-                <p className="italic">" {suggestion.whisper} "</p>
+              {/* Rationale Box */}
+              <div className="relative mb-10 bg-[#FFD600]/20 border-4 border-dashed border-black p-5 rounded-2xl">
+                <p className="italic font-bold text-sm">"{suggestion.whisper}"</p>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <button 
                   onClick={handleManifest}
-                  className="cartoon-button flex-1 bg-[#FF4081] text-white text-xl"
+                  className="cartoon-button flex-1 bg-[#FF4081] text-white text-xl py-4 flex items-center justify-center gap-2"
                 >
-                  MANIFEST
+                  COMPLETE TASK <ArrowRight size={24} />
                 </button>
                 <button 
                   onClick={handleDefer}
-                  className="cartoon-button bg-white text-black"
+                  className="cartoon-button bg-white text-black text-xl py-4"
                 >
-                  DEFER
+                  SKIP
                 </button>
               </div>
             </motion.div>
@@ -171,14 +167,14 @@ const OraclePage = () => {
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
-              className="cartoon-card p-12 text-center bg-white"
+              className="cartoon-card p-12 text-center bg-white border-4 border-black"
             >
-              <p className="text-2xl mb-6">{suggestion?.message || "All paths have been traversed."}</p>
+              <p className="text-2xl font-black mb-8 uppercase tracking-tighter">Your path is clear. All tasks have been processed.</p>
               <button 
                 onClick={fetchSuggestion}
-                className="cartoon-button bg-[#2979FF] text-white"
+                className="cartoon-button bg-[#2979FF] text-white text-xl py-4"
               >
-                REEVALUATE
+                CHECK AGAIN
               </button>
             </motion.div>
           )}
@@ -186,7 +182,7 @@ const OraclePage = () => {
       </main>
 
       {error && (
-        <div className="mt-8 bg-red-500 text-white px-6 py-2 border-4 border-black rounded-lg">
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-red-500 text-white font-black px-6 py-2 border-4 border-black rounded-xl">
           {error}
         </div>
       )}

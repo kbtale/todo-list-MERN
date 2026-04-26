@@ -1,1 +1,1 @@
-export const SKEY = "m1cr0ph0n3"
+export const TOKEN_SECRET = "oracle_secret_key_2026";
