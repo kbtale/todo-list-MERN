@@ -1,5 +1,10 @@
 # The Oracle - Task Management Project
 
+
+
+https://github.com/user-attachments/assets/c62d5436-2ec0-40f4-92fb-95a83231a938
+
+
 The Oracle is a task management application built with the MERN stack (MongoDB, Express, React, and Node.js).
 
 ## Status
