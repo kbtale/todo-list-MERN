@@ -1,0 +1,37 @@
+services:
+  mongo:
+    container_name: oracle-db
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    container_name: oracle-api
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/theOracleDB
+      - PORT=3000
+    depends_on:
+      - mongo
+
+  frontend:
+    container_name: oracle-client
+    build: ./client
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client/src:/app/src
+      - ./client/index.html:/app/index.html
+      - ./client/package.json:/app/package.json
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:

@@ -1,24 +1,21 @@
-import {SKEY} from '../config.js'
+import { TOKEN_SECRET } from '../config.js'
 import jwt from 'jsonwebtoken'
 
 export function createAccessToken(payload){
     return new Promise((resolve, reject) => {
         jwt.sign(
             payload,
-            SKEY,
+            TOKEN_SECRET,
             {
                 expiresIn: "1d"
             },
             (error, token) => {
                 if(error){
-                    reject(error)
-                    console.log("failed")
+                    console.error("Token generation failed:", error);
+                    reject(error);
                 }
-                
-                console.log("Token created successfully: ", token)
-                resolve(token)
+                resolve(token);
             }
         )
     })
-    
 }

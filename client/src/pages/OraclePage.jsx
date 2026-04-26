@@ -1,196 +1,152 @@
-import { useState, useEffect } from 'react';
-import axios from '../api/axios';
+import { useState, useEffect, useCallback } from 'react';
+import { getOracleSuggestionRequest, updateEnergyRequest, manifestTaskRequest, deferTaskRequest } from '../api/tasks';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Zap, Target, BookOpen, Brain, Leaf, Flame } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { Zap, CheckCircle, XCircle } from 'lucide-react';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 const OraclePage = () => {
   const [suggestion, setSuggestion] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [userEnergy, setUserEnergy] = useState(3);
+  const [energyLevel, setEnergyLevel] = useState(3);
 
-  const fetchSuggestion = async () => {
+  const fetchSuggestion = useCallback(async (level = energyLevel) => {
     try {
-      setLoading(true);
-      const res = await axios.get('/tasks/oracle');
+      const res = await getOracleSuggestionRequest(level);
       setSuggestion(res.data);
       setLoading(false);
-    } catch (err) {
-      setError("The Oracle is silent. Try again later.");
+    } catch (error) {
+      console.error("Failed to fetch suggestion:", error);
       setLoading(false);
     }
-  };
-
-  const updateEnergy = async (level) => {
-    try {
-      setUserEnergy(level);
-      await axios.post('/users/energy', { energyLevel: level });
-      fetchSuggestion(); // Re-rank tasks
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  }, [energyLevel]);
 
   useEffect(() => {
-    const init = async () => {
-      // Get initial energy state from somewhere or just fetch suggestion
-      fetchSuggestion();
-    };
-    init();
-  }, []);
+    fetchSuggestion();
+  }, [fetchSuggestion]);
 
-  const manifestSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'); // Chime
-  const deferSfx = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'); // Woosh
-
-  const handleManifest = async () => {
-    if (!suggestion?.task) return;
+  const handleEnergyUpdate = async (level) => {
+    setEnergyLevel(level);
     try {
-      manifestSfx.play();
-      await axios.post(`/tasks/${suggestion.task._id}/manifest`);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#FFD600', '#FF4081', '#2979FF']
-      });
-      fetchSuggestion();
-    } catch (err) {
-      setError("Manifestation failed.");
+      await updateEnergyRequest(level);
+    } catch (error) {
+      console.error("Failed to update energy state:", error);
     }
   };
 
-  const handleDefer = async () => {
-    if (!suggestion?.task) return;
+  const handleAction = async (action) => {
+    if (!suggestion?.task?._id) return;
     try {
-      deferSfx.play();
-      await axios.post(`/tasks/${suggestion.task._id}/defer`);
+      if (action === 'manifest') {
+        await manifestTaskRequest(suggestion.task._id);
+      } else {
+        await deferTaskRequest(suggestion.task._id);
+      }
       fetchSuggestion();
-    } catch (err) {
-      setError("Could not defer the path.");
+    } catch (error) {
+      console.error(`Failed to ${action} task:`, error);
     }
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'deep-work': return <Brain className="w-6 h-6" />;
-      case 'learning': return <BookOpen className="w-6 h-6" />;
-      case 'health': return <Zap className="w-6 h-6" />;
-      case 'quick-fix': return <Sparkles className="w-6 h-6" />;
-      default: return <Target className="w-6 h-6" />;
-    }
-  };
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFD600]">
-      <motion.div 
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-        className="w-16 h-16 border-8 border-black border-t-transparent rounded-full"
-      />
-    </div>
+  if (loading && !suggestion) return (
+    <div className="w-16 h-16 border-8 border-black border-t-transparent rounded-full animate-spin mt-20" />
   );
 
   return (
-    <div className="min-h-screen bg-[#FFD600] p-6 flex flex-col items-center justify-center font-bold">
-      <header className="mb-12 text-center">
-        <h1 className="text-6xl font-black uppercase tracking-tighter border-black text-black">
-          The Oracle
+    <>
+      <header className="mb-8 text-center mt-8">
+        <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-black italic">
+          THE ORACLE
         </h1>
-        <p className="text-xl bg-black text-white px-4 py-1 mt-2 inline-block -rotate-2">
-          Your path is revealed
+        <p className="text-sm font-black uppercase tracking-widest text-black/40 italic">
+          Seek Guidance · Manifest Reality
         </p>
       </header>
 
-      {/* Energy State Selector */}
-      <div className="mb-12 cartoon-card bg-white p-4 flex items-center gap-6">
-        <span className="uppercase text-sm">How do you feel?</span>
-        <div className="flex gap-2 text-2xl">
-          {[1, 2, 3, 4, 5].map((level) => (
-            <button
-              key={level}
-              onClick={() => updateEnergy(level)}
-              className={`w-12 h-12 flex items-center justify-center border-4 border-black rounded-lg transition-all ${userEnergy === level ? 'bg-[#FFD600] scale-110 -translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white grayscale opacity-50 hover:opacity-100 hover:grayscale-0'}`}
-            >
-              {level <= 1 ? <Leaf size={24} /> : level <= 3 ? <Zap size={24} /> : <Flame size={24} />}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <main className="w-full max-w-2xl">
+      <div className="max-w-xl w-full">
         <AnimatePresence mode="wait">
           {suggestion?.task ? (
             <motion.div
               key={suggestion.task._id}
-              initial={{ scale: 0.8, rotate: -3 }}
-              animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0.5, rotate: 5, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 15 }}
-              className="cartoon-card p-8 bg-white"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
             >
-              <div className="flex items-center justify-between mb-6">
-                <span className="flex items-center gap-2 bg-[#2979FF] text-white px-3 py-1 rounded-full border-2 border-black">
-                  {getCategoryIcon(suggestion.task.category)}
-                  {suggestion.task.category}
-                </span>
-                <span className="text-black/50">Score: {Math.round(suggestion.score)}</span>
-              </div>
+              <Card className="p-6 md:p-10">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-black text-white rounded-lg text-xs font-black uppercase tracking-tighter">
+                    <Zap size={14} fill="currentColor" /> {suggestion.task.energyLevel} Energy
+                  </div>
+                  <div className="text-[10px] font-black uppercase text-black/30 tracking-widest">
+                    {suggestion.task.category}
+                  </div>
+                </div>
 
-              <h2 className="text-4xl font-black mb-4 uppercase leading-none">
-                {suggestion.task.title}
-              </h2>
-              
-              <p className="text-lg mb-8 opacity-80">
-                {suggestion.task.description || "No description provided for this path."}
-              </p>
+                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4 leading-tight italic">
+                  {suggestion.task.title}
+                </h2>
+                
+                {suggestion.task.description && (
+                  <p className="text-lg md:text-xl font-bold mb-8 border-l-8 border-[#FFD600] pl-4 italic opacity-80">
+                    "{suggestion.task.description}"
+                  </p>
+                )}
 
-              {/* Whisper Bar (Comic Bubble) */}
-              <div className="relative mb-12 bg-pink-100 border-4 border-black p-4 rounded-xl rotate-1">
-                <div className="absolute -bottom-4 left-8 w-0 h-0 border-l-[15px] border-l-transparent border-t-[15px] border-t-black border-r-[15px] border-r-transparent"></div>
-                <div className="absolute -bottom-[10px] left-8 w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-pink-100 border-r-[10px] border-r-transparent"></div>
-                <p className="italic">" {suggestion.whisper} "</p>
-              </div>
-
-              <div className="flex gap-4">
-                <button 
-                  onClick={handleManifest}
-                  className="cartoon-button flex-1 bg-[#FF4081] text-white text-xl"
-                >
-                  MANIFEST
-                </button>
-                <button 
-                  onClick={handleDefer}
-                  className="cartoon-button bg-white text-black"
-                >
-                  DEFER
-                </button>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12">
+                  <Button variant="green" size="lg" onClick={() => handleAction('manifest')}>
+                    <CheckCircle className="shrink-0" /> MANIFEST
+                  </Button>
+                  <Button variant="white" size="lg" onClick={() => handleAction('defer')}>
+                    <XCircle className="shrink-0" /> DEFER
+                  </Button>
+                </div>
+              </Card>
             </motion.div>
           ) : (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="cartoon-card p-12 text-center bg-white"
-            >
-              <p className="text-2xl mb-6">{suggestion?.message || "All paths have been traversed."}</p>
-              <button 
-                onClick={fetchSuggestion}
-                className="cartoon-button bg-[#2979FF] text-white"
-              >
-                REEVALUATE
-              </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Card className="p-12 text-center">
+                <div className="flex justify-center mb-6 text-black/10">
+                  <Zap size={80} />
+                </div>
+                <h2 className="text-3xl font-black uppercase mb-4 tracking-tighter">Alignment Complete</h2>
+                <p className="font-bold opacity-60 uppercase text-xs italic">All tasks manifested or balanced for now.</p>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
 
-      {error && (
-        <div className="mt-8 bg-red-500 text-white px-6 py-2 border-4 border-black rounded-lg">
-          {error}
+        <div className="mt-12 space-y-6">
+          <div className="flex items-center justify-between px-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-black/40 italic">Current Energy State</label>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <div 
+                  key={level} 
+                  className={`w-5 h-2 rounded-full border-2 border-black transition-colors ${level <= energyLevel ? 'bg-black shadow-[1px_1px_0px_0px_rgba(0,0,0,0.2)]' : 'bg-transparent'}`} 
+                />
+              ))}
+            </div>
+          </div>
+          
+          <Card className="p-4 flex gap-4 overflow-x-auto no-scrollbar">
+            {[1, 2, 3, 4, 5].map((level) => (
+              <Button
+                key={level}
+                variant={energyLevel === level ? 'yellow' : 'white'}
+                className="flex-1 min-w-[3.5rem] py-4"
+                onClick={() => handleEnergyUpdate(level)}
+              >
+                <div className="flex gap-0.5">
+                  {[...Array(level)].map((_, i) => (
+                    <Zap key={i} size={14} fill="currentColor" className="shrink-0" />
+                  ))}
+                </div>
+              </Button>
+            ))}
+          </Card>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 
